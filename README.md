@@ -1,2 +1,2 @@
-# arduino-i2c-hid
-Arudino as a HID over I2C device
+# arduino-mouse-keyboard
+Uses and Arduino as a combined Mouse/Keyboard with modified functionality.
