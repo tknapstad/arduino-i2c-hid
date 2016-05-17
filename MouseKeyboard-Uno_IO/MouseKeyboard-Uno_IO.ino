@@ -5,21 +5,11 @@
 #define BUTTON_PIN A2
 
 #define JOYSTICK_JITTER 1
-#define XY_RANGE 10
+#define XY_RANGE 5
 
 int8_t x_zero = 0;
 int8_t y_zero = 0;
 InputData prev_input = {0};
-
-// Send report if the joystick is off-center, has just been released or the button/keys have changed state
-//boolean should_report_input(const InputData& current, const InputData& prev) {
-//  boolean joystick_active = (current.x != 0 || current.y != 0);
-//  boolean joystick_released = (current.x == 0 && current.y == 0) && (prev.x != 0 || prev.y != 0);
-//  boolean button_changed = (current.btn != prev.btn);
-//  boolean key_changed = (current.key != prev.key);
-//  
-//  return (joystick_active || joystick_released || button_changed || key_changed);
-//}
 
 // Return false if all zeros in current and prev
 boolean should_report_input(const InputData& current, const InputData& prev) {
@@ -35,17 +25,18 @@ void copy_input(const InputData& src, InputData& dst) {
 
 // Send input data on the format "%x,y,btn,key\n"
 void send_input_data(const InputData& data) {
-    char buf[128];
-    int bytes = sprintf(buf, "%c%d%c%d%c%u%c%u%c", 
-                        SERIAL_FRAME_START, 
-                        data.x, SERIAL_DELIMITER,
-                        data.y, SERIAL_DELIMITER,
-                        data.btn, SERIAL_DELIMITER,
-                        data.key, 
-                        SERIAL_FRAME_END);
-    while (Serial.availableForWrite() < strlen(buf)) { delay(1); }
-    Serial.print(buf);
-    //Serial.flush();
+  char buf[128];
+  int bytes = sprintf(buf, "%c%d%c%d%c%u%c%u%c",
+                      SERIAL_FRAME_START,
+                      data.x, SERIAL_DELIMITER,
+                      data.y, SERIAL_DELIMITER,
+                      data.btn, SERIAL_DELIMITER,
+                      data.key,
+                      SERIAL_FRAME_END);
+  while (Serial.availableForWrite() < strlen(buf)) {
+    delay(1);
+  }
+  Serial.print(buf);
 }
 
 void setup() {
@@ -55,7 +46,7 @@ void setup() {
   // Fingers crosses that it's not moved at this time
   x_zero = map(analogRead(X_AXIS_PIN), 0, 1 << 10, -XY_RANGE, XY_RANGE);
   y_zero = map(analogRead(Y_AXIS_PIN), 0, 1 << 10, XY_RANGE, -XY_RANGE);
-  
+
   // Start the Serial which is connected with the USB MCU.
   // Make sure both baud rates are the same
   Serial.begin(INTERNAL_BAUDRATE);
@@ -73,7 +64,7 @@ void loop() {
   if (abs(input.y) <= JOYSTICK_JITTER) {
     input.y = 0;
   }
-  
+
   input.btn = !digitalRead(BUTTON_PIN);
   // TODO: read actual keys when connected
   input.key = 0;
@@ -82,6 +73,6 @@ void loop() {
     copy_input(input, prev_input);
     send_input_data(input);
   }
-  delay(10);
+  delay(5);
 }
 

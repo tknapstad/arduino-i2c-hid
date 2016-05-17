@@ -2,6 +2,7 @@
 #include "MouseKeyboardDataTypes.h"
 
 InputData input;
+boolean buttonPressed = false;
 
 void print_input_data(const InputData& input) {
       Serial.print(F("X="));
@@ -21,6 +22,21 @@ void parse_input_data() {
     input.btn = Serial1.parseInt();
     input.key = Serial1.parseInt();
     Serial1.readStringUntil(SERIAL_FRAME_END); 
+}
+
+void on_button_released() {
+  Keyboard.write(KEY_S);
+  Keyboard.write(KEY_P);
+  Keyboard.write(KEY_R);
+  Keyboard.write(KEY_E);
+  Keyboard.write(KEY_S);
+  Keyboard.write(KEY_S);
+  Keyboard.write(KEY_SPACE);
+  Keyboard.write(KEY_P);
+  Keyboard.write(KEY_U);
+  Keyboard.write(KEY_L);
+  Keyboard.write(KEY_L);
+  Keyboard.write(KEY_ENTER);
 }
 
 void setup() {
@@ -57,7 +73,17 @@ void loop() {
       Mouse.move(input.x, input.y);
     }
 
-    // TODO: handle button and keys
+    if (input.btn) {
+      buttonPressed = true;
+    } else {
+      if (buttonPressed) {
+        on_button_released();
+      }
+    }
+
+    // TODO: handle keys
+  } else {
+    delay(1);
   }
 }
 
