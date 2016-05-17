@@ -11,25 +11,29 @@ int8_t x_zero = 0;
 int8_t y_zero = 0;
 InputData prev_input = {0};
 
-// Must send report if the joystick is off-center or the button/keys have changed state
-boolean must_report_input(const InputData& current, const InputData& prev) {
-//  return (abs(current.x) > JOYSTICK_JITTER ||
-//          abs(current.y) > JOYSTICK_JITTER ||
-//          current.btn != prev.btn ||
-//          current.key != prev.key);
-  boolean joystick_centered = (current.x == 0 && prev.x == 0 && current.y == 0 && prev.y == 0);
-  return (!joystick_centered ||
-          current.btn != prev.btn ||
-          current.key != prev.key);
+// Send report if the joystick is off-center, has just been released or the button/keys have changed state
+//boolean should_report_input(const InputData& current, const InputData& prev) {
+//  boolean joystick_active = (current.x != 0 || current.y != 0);
+//  boolean joystick_released = (current.x == 0 && current.y == 0) && (prev.x != 0 || prev.y != 0);
+//  boolean button_changed = (current.btn != prev.btn);
+//  boolean key_changed = (current.key != prev.key);
+//  
+//  return (joystick_active || joystick_released || button_changed || key_changed);
+//}
+
+// Return false if all zeros in current and prev
+boolean should_report_input(const InputData& current, const InputData& prev) {
+  return (current.x + current.y + current.btn + current.key + prev.x + prev.y + prev.btn + prev.key);
 }
 
 void copy_input(const InputData& src, InputData& dst) {
-  dst.x == src.x;
-  dst.y == src.y;
-  dst.btn == src.btn;
-  dst.key == src.key;
+  dst.x = src.x;
+  dst.y = src.y;
+  dst.btn = src.btn;
+  dst.key = src.key;
 }
 
+// Send input data on the format "%x,y,btn,key\n"
 void send_input_data(const InputData& data) {
     char buf[128];
     int bytes = sprintf(buf, "%c%d%c%d%c%u%c%u%c", 
@@ -39,9 +43,9 @@ void send_input_data(const InputData& data) {
                         data.btn, SERIAL_DELIMITER,
                         data.key, 
                         SERIAL_FRAME_END);
-    while (Serial.availableForWrite() < strlen(buf)) { }
+    while (Serial.availableForWrite() < strlen(buf)) { delay(1); }
     Serial.print(buf);
-    Serial.flush();
+    //Serial.flush();
 }
 
 void setup() {
@@ -61,17 +65,20 @@ void loop() {
   InputData input;
   input.x = map(analogRead(X_AXIS_PIN), 0, 1 << 10, -XY_RANGE, XY_RANGE) - x_zero;
   input.y = map(analogRead(Y_AXIS_PIN), 0, 1 << 10, XY_RANGE, -XY_RANGE) - y_zero;
-  if (input.x <= JOYSTICK_JITTER) {
+
+  // Zero x and/or y if below the jitter threshold
+  if (abs(input.x) <= JOYSTICK_JITTER) {
     input.x = 0;
   }
-  if (input.y <= JOYSTICK_JITTER) {
+  if (abs(input.y) <= JOYSTICK_JITTER) {
     input.y = 0;
   }
+  
   input.btn = !digitalRead(BUTTON_PIN);
   // TODO: read actual keys when connected
   input.key = 0;
 
-  if (must_report_input(input, prev_input)) {
+  if (should_report_input(input, prev_input)) {
     copy_input(input, prev_input);
     send_input_data(input);
   }

@@ -1,9 +1,7 @@
 #ifndef __MOUSE_KEYBOARD_DATATYPES_H
 #define __MOUSE_KEYBOARD_DATATYPES_H
 
-#define INTERNAL_BAUDRATE 115200
-#define NACK 0
-#define ACK 1
+#define INTERNAL_BAUDRATE 2000000
 
 static const char SERIAL_FRAME_START = '$';
 static const char SERIAL_FRAME_END = '\n';

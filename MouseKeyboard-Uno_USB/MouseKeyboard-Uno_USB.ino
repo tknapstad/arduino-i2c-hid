@@ -2,7 +2,6 @@
 #include "MouseKeyboardDataTypes.h"
 
 InputData input;
-int lastMove = 0;
 
 void print_input_data(const InputData& input) {
       Serial.print(F("X="));
@@ -16,28 +15,10 @@ void print_input_data(const InputData& input) {
 }
 
 void parse_input_data() {
-    boolean neg = false;
     Serial1.readStringUntil(SERIAL_FRAME_START);
-    if (Serial1.peek() == '-') {
-      neg = true;
-    }
     input.x = Serial1.parseInt();
-    if (neg) {
-      input.x *= -1;
-      neg = false;
-    }
-    Serial1.read();
-    if (Serial1.peek() == '-') {
-      neg = true;
-    }
     input.y = Serial1.parseInt();
-    if (neg) {
-      input.y *= -1;
-      neg = false;
-    }
-    Serial1.read();
     input.btn = Serial1.parseInt();
-    Serial1.read();
     input.key = Serial1.parseInt();
     Serial1.readStringUntil(SERIAL_FRAME_END); 
 }
@@ -59,18 +40,24 @@ void setup() {
 void loop() {
   if (Serial1.available()) {
     parse_input_data();
-    print_input_data(input);
-    if (!Mouse.isPressed(MOUSE_MIDDLE)) {
-      Mouse.press(MOUSE_MIDDLE);
-      Serial.println(F("Middle mouse pressed"));
+    //print_input_data(input);
+
+    // Release the mouse button if the joystick is released
+    if (input.x == 0 && input.y == 0) {
+      if (Mouse.isPressed(MOUSE_MIDDLE)) {
+        Mouse.release(MOUSE_MIDDLE);
+        //Serial.println(F("Middle mouse released"));
+      }
+    } else {
+      // Press the middle mouse button if it's not allready
+      if (!Mouse.isPressed(MOUSE_MIDDLE)) {
+        Mouse.press(MOUSE_MIDDLE);
+        //Serial.println(F("Middle mouse pressed"));
+      }
+      Mouse.move(input.x, input.y);
     }
-    Mouse.move(input.x, input.y);
-    lastMove = millis();
-  } else {
-    if ( (millis() - lastMove > 100) && Mouse.isPressed(MOUSE_MIDDLE)) {
-       Mouse.release(MOUSE_MIDDLE);
-      Serial.println(F("Middle mouse released"));
-    }
+
+    // TODO: handle button and keys
   }
 }
 
