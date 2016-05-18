@@ -3,6 +3,7 @@
 
 InputData input;
 boolean buttonPressed = false;
+uint8_t keyPressed = 0;
 
 void print_input_data(const InputData& input) {
       Serial.print(F("X="));
@@ -39,25 +40,11 @@ void on_button_released() {
   Keyboard.write(KEY_ENTER);
 }
 
-void setup() {
-  // Start the USB Serial for debugging
-  Serial.begin(115200);
-
-  // Start the Serial1 which is connected with the IO MCU.
-  // Make sure both baud rates are the same
-  Serial1.begin(INTERNAL_BAUDRATE);
-
-  // Sends a clean report to the host. This is important on any Arduino type.
-  Keyboard.begin();
-  Mouse.begin();
-
+void on_key_pressed(const uint8_t key) {
+    // TODO: handle keys    
 }
 
-void loop() {
-  if (Serial1.available()) {
-    parse_input_data();
-    //print_input_data(input);
-
+void send_usb_input_reports() {
     // Release the mouse button if the joystick is released
     if (input.x == 0 && input.y == 0) {
       if (Mouse.isPressed(MOUSE_MIDDLE)) {
@@ -78,10 +65,38 @@ void loop() {
     } else {
       if (buttonPressed) {
         on_button_released();
+        buttonPressed = false;
       }
     }
 
-    // TODO: handle keys
+    if (input.key) {
+      keyPressed = input.key;
+    } else {
+      if (keyPressed) {
+        on_key_pressed(input.key);
+        keyPressed = 0;
+      }
+    }
+}
+
+void setup() {
+  // Start the USB Serial for debugging
+  Serial.begin(115200);
+
+  // Start the Serial1 which is connected with the IO MCU.
+  // Make sure both baud rates are the same
+  Serial1.begin(INTERNAL_BAUDRATE);
+
+  // Sends a clean report to the host. This is important on any Arduino type.
+  Keyboard.begin();
+  Mouse.begin();
+}
+
+void loop() {
+  if (Serial1.available()) {
+    parse_input_data();
+    //print_input_data(input);
+    send_usb_input_reports();
   } else {
     delay(1);
   }
